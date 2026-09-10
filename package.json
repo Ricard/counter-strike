@@ -1,0 +1,19 @@
+{
+  "name": "cs-webgl-fps",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "FPS tàctic estil Counter-Strike en WebGL - MVP",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0 --port 5173",
+    "build": "vite build",
+    "preview": "vite preview --host 0.0.0.0 --port 5173"
+  },
+  "dependencies": {
+    "three": "^0.160.0",
+    "@dimforge/rapier3d-compat": "^0.15.1",
+    "yuka": "^0.7.8"
+  },
+  "devDependencies": {
+    "vite": "^5.0.12"
+  }
+}
