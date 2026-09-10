@@ -124,3 +124,37 @@ Servidor autoritatiu Node + Rapier (mateix codi física), clients envien comande
 ---
 
 FET AMB ❤️ PER MVP — Iteració 1 completa, jugable, extensible.
+
+## 🌐 Desplegament a GitHub Pages (estàtic)
+
+Aquest projecte és **100% estàtic** (Vite build → HTML+JS+WASM). No necessita servidor.
+
+### Opció A: Branca `gh-pages` (clàssic) — JA PUBLICAT
+
+Ja he compilat i pujat a la branca `gh-pages`:
+
+```bash
+npm run build
+# dist/ conté tot
+```
+
+Per activar:
+
+1. Ves a https://github.com/Ricard/counter-strike/settings/pages
+2. **Build and deployment** → **Source**: `Deploy from a branch`
+3. **Branch**: `gh-pages` / `/(root)` → Save
+4. En 1-2 min la web serà a **https://ricard.github.io/counter-strike/**
+
+### Opció B: GitHub Actions (modern) — JA CONFIGURAT
+
+Ja hi ha `.github/workflows/deploy.yml` amb `enablement: true`. Un cop Pages estigui habilitat una vegada (opció A), els següents pushes a `main` o `arena/01a08aef-counter-strike` desplegaran automàticament via Actions.
+
+Workflow: build → upload artifact → deploy-pages.
+
+### Altres hostings
+
+- **Netlify**: drag & drop `dist/`
+- **Vercel**: `vercel --prod`
+- **Cloudflare Pages**: connecta repo, build command `npm run build`, output `dist`
+
+Base path està configurat a `/counter-strike/` a `vite.config.js` per GitHub Pages. Per hosting a root (netlify/vercel), canvia a `base: '/'`.
