@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CS WebGL - MVP</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    html,body { width:100%; height:100%; overflow:hidden; background:#0a0a0a; font-family: monospace; }
+    #game-container { position:relative; width:100%; height:100%; }
+    #canvas { display:block; width:100%; height:100%; }
+    /* Crosshair - DOM based */
+    #crosshair {
+      position:absolute; top:50%; left:50%; width:0; height:0; pointer-events:none;
+      transform:translate(-50%,-50%);
+      z-index:10;
+    }
+    .ch-line {
+      position:absolute; background:#00ff88; box-shadow:0 0 2px #00ff88;
+      will-change: transform;
+    }
+    .ch-line.h { width:12px; height:2px; }
+    .ch-line.v { width:2px; height:12px; }
+    #crosshair-dot {
+      position:absolute; width:2px; height:2px; background:#fff; border-radius:50%;
+      left:50%; top:50%; transform:translate(-50%,-50%);
+    }
+    /* HUD */
+    #hud {
+      position:absolute; bottom:20px; left:20px; right:20px;
+      display:flex; justify-content:space-between; align-items:flex-end;
+      pointer-events:none; z-index:10; color:#e0e0e0; font-size:14px;
+      text-shadow:0 1px 2px #000;
+    }
+    #hud-left, #hud-right { background:rgba(0,0,0,0.5); padding:10px 14px; border:1px solid rgba(0,255,136,0.3); }
+    #ammo { font-size:22px; font-weight:bold; color:#00ff88; }
+    #health { font-size:18px; }
+    #weapon-name { font-size:12px; opacity:0.7; letter-spacing:1px; }
+    /* Center messages */
+    #center-msg {
+      position:absolute; top:50%; left:50%; transform:translate(-50%,-80px);
+      color:#fff; font-size:18px; text-align:center; pointer-events:none; z-index:11;
+      background:rgba(0,0,0,0.7); padding:12px 20px; border:1px solid #00ff88;
+      display:none;
+    }
+    #center-msg.visible { display:block; }
+    /* Menu overlay */
+    #menu-overlay {
+      position:absolute; inset:0; background:rgba(5,10,8,0.92);
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      z-index:20; color:#e0e0e0;
+    }
+    #menu-overlay.hidden { display:none; }
+    #menu-overlay h1 { font-size:48px; color:#00ff88; letter-spacing:4px; margin-bottom:10px; text-shadow:0 0 20px rgba(0,255,136,0.5); }
+    #menu-overlay h2 { font-size:14px; opacity:0.6; letter-spacing:2px; margin-bottom:40px; }
+    .menu-btn {
+      background:transparent; border:1px solid #00ff88; color:#00ff88;
+      padding:12px 32px; font-family:monospace; font-size:16px; cursor:pointer;
+      letter-spacing:2px; transition:all 0.15s; margin:6px;
+    }
+    .menu-btn:hover { background:#00ff88; color:#000; box-shadow:0 0 15px #00ff88; }
+    .settings-row { display:flex; gap:12px; align-items:center; margin:10px 0; font-size:13px; }
+    .settings-row input[type=range] { width:140px; accent-color:#00ff88; }
+    .controls-grid { display:grid; grid-template-columns: auto auto; gap:6px 20px; font-size:12px; opacity:0.8; margin-top:20px; text-align:left; }
+    .controls-grid b { color:#00ff88; }
+    /* Debug */
+    #debug {
+      position:absolute; top:10px; left:10px; color:#00ff88; font-size:11px;
+      background:rgba(0,0,0,0.6); padding:6px 8px; pointer-events:none; z-index:10;
+      line-height:1.4;
+    }
+    #damage-vignette {
+      position:absolute; inset:0; pointer-events:none; z-index:9;
+      background:radial-gradient(ellipse at center, transparent 60%, rgba(255,0,40,0.4) 100%);
+      opacity:0; transition:opacity 0.1s;
+    }
+  </style>
+  <script type="module" crossorigin src="/counter-strike/assets/index-CYFsYTQj.js"></script>
+</head>
+<body>
+  <div id="game-container">
+    <canvas id="canvas"></canvas>
+    <div id="damage-vignette"></div>
+    <div id="crosshair">
+      <div class="ch-line h" id="ch-left"></div>
+      <div class="ch-line h" id="ch-right"></div>
+      <div class="ch-line v" id="ch-top"></div>
+      <div class="ch-line v" id="ch-bottom"></div>
+      <div id="crosshair-dot"></div>
+    </div>
+    <div id="hud">
+      <div id="hud-left">
+        <div id="health">HP 100</div>
+        <div id="weapon-name">AK-47 | RIFLE</div>
+      </div>
+      <div id="hud-right">
+        <div id="ammo">30 / 90</div>
+        <div id="fps-counter" style="font-size:11px; opacity:0.7; margin-top:4px;">FPS --</div>
+      </div>
+    </div>
+    <div id="center-msg"></div>
+    <div id="debug"></div>
+    <div id="menu-overlay">
+      <h1>COUNTER-STRIKE WEB</h1>
+      <h2>MVP // THREE.JS + RAPIER // 64 TICK</h2>
+      <button class="menu-btn" id="play-btn">[ JUGAR ]</button>
+      <div style="margin-top:20px;">
+        <div class="settings-row">
+          <label>SENSIBILITAT</label>
+          <input type="range" id="sens-range" min="0.1" max="3" step="0.1" value="1.0">
+          <span id="sens-val">1.0</span>
+        </div>
+        <div class="settings-row">
+          <label>FOV</label>
+          <input type="range" id="fov-range" min="60" max="110" step="1" value="90">
+          <span id="fov-val">90</span>
+        </div>
+        <div class="settings-row">
+          <label>CROSSHAIR GAP</label>
+          <input type="range" id="ch-gap-range" min="0" max="10" step="0.5" value="3">
+          <span id="ch-gap-val">3</span>
+        </div>
+      </div>
+      <div class="controls-grid">
+        <span><b>WASD</b> Mou-te</span><span><b>MOUSE</b> Apunta</span>
+        <span><b>SPACE</b> Salta</span><span><b>CTRL</b> Ajupir-se</span>
+        <span><b>SHIFT</b> Caminar</span><span><b>R</b> Recarregar</span>
+        <span><b>CLICK ESQ</b> Dispara</span><span><b>CLICK DRET</b> Zoom</span>
+        <span><b>ESC</b> Menú</span><span><b>1-4</b> Canvi arma (futur)</span>
+      </div>
+      <div style="margin-top:20px; font-size:11px; opacity:0.5; max-width:500px; text-align:center;">
+        Motor: Three.js WebGL2 + Rapier3D WASM @ 64Hz. Input raw via Pointer Lock amb unadjustedMovement.<br>
+        Recoil determinista, sway, crosshair dinàmic. Mapa bloc-out validació.
+      </div>
+    </div>
+  </div>
+</body>
+</html>
